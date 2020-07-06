@@ -1,0 +1,3 @@
+- Run server
+- Add notes to the generated directory ("./notes" by default)
+- Restart server
