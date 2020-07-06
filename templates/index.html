@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search notes</title>
+    <style>
+        html {
+            background-color: #04253a;
+        }
+
+        #search-input {
+            width: 99%;
+            background-color: #04253a;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: x-large;
+            border-style: none none solid none;
+        }
+        #search-input:hover, #search-input:active {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #notes {
+            width: 69%;
+            margin-left: 15%;
+            margin-right: 15%;
+            font-family: "Lucida Console", Monaco, monospace;
+        }
+
+        #notes thead {
+            height: 5rem;
+        }
+
+        #notes th {
+            background-color: #04253a;
+        }
+        
+        #notes tr {
+            background-color: rgba(76, 131, 122, 0.8);
+            height: 3rem;
+        }
+
+        #notes tr:hover {
+            background-color: rgba(76, 131, 122, 1);
+        }
+
+        #notes a {
+            color: hsl(53, 36%, 82%);
+            text-decoration: none;
+            margin-left: 2%;
+        }
+
+        #loader {
+            display: inline-block;
+            position: absolute;
+            width: 80px;
+            height: 80px;
+
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+
+            margin: auto;
+        }
+        #loader div {
+            display: inline-block;
+            position: absolute;
+            left: 8px;
+            width: 16px;
+            background: rgb(225, 221, 191);
+            animation: loader 1.2s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+        }
+        #loader div:nth-child(1) {
+            left: 8px;
+            animation-delay: -0.24s;
+        }
+        #loader div:nth-child(2) {
+            left: 32px;
+            animation-delay: -0.12s;
+        }
+        #loader div:nth-child(3) {
+            left: 56px;
+            animation-delay: 0;
+        }
+        @keyframes loader {
+            0% {
+                top: 8px;
+                height: 64px;
+            }
+            50%, 100% {
+                top: 24px;
+                height: 32px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    
+    <br>
+    <br>
+    <table id="notes">
+        <thead><th><input type="text" id="search-input" name="search" placeholder="Search notes"></th></thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+    <div id="loader"><div></div><div></div><div></div></div>
+
+    <script>
+        var currentDir = "{{ current_dir }}";
+        var url = {{ url_for('run_search')|tojson }};
+        var requestDelay = 1 * 1000;
+        var sendSearchRequestTimer = setTimeout(function(){sendSearchRequest(url, "", currentDir)}, 0);
+        sendSearchRequestTimer;
+
+        var spinner = document.getElementById("loader");
+        spinner.style.visibility = 'hidden';
+
+        function sendSearchRequest(url, pattern, dir) {
+            let fullUrl = url + "?text=" + pattern + "&dir=" + dir;
+
+            let tableBody = document.getElementById('notes').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            spinner.style.visibility = 'visible';
+
+            fetch(fullUrl, {
+                method: 'GET',
+            })
+                .then(parseJSON)
+                .then(showSearchResults);
+            }
+
+        function parseJSON(response) {
+           return response.json();
+        }
+
+        function showSearchResults(data) {
+            spinner.style.visibility = 'hidden';
+
+            let tableBody = document.getElementById('notes').getElementsByTagName('tbody')[0],
+                cellHTMLPrefix = "<tr><td>",
+                cellHTMLPostfix = "</td></tr>";
+            
+            console.log(data)
+
+            if (data.length > 0) {
+                data.forEach(noteName => {
+                    tableBody.innerHTML += cellHTMLPrefix
+                        + "<a href=" + noteName + ">"
+                        + noteName.replace(/\//g, " > ")
+                        + "</a>"
+                        + cellHTMLPostfix;
+                });
+            } else {
+                tableBody.innerHTML = cellHTMLPrefix + "No results" + cellHTMLPostfix;
+            };
+        }
+
+        let searchInput = document.getElementById("search-input");
+
+        searchInput.addEventListener('keyup', function(event) {
+            clearTimeout(sendSearchRequestTimer);
+            let pattern = searchInput.value;
+            sendSearchRequestTimer = setTimeout(function(){sendSearchRequest(url, pattern, currentDir)}, requestDelay);
+            sendSearchRequestTimer;
+        });
+
+    </script>
+</body>
+</html>
